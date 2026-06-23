@@ -53,9 +53,9 @@ func (s *ProductService) GetProductByID(ctx context.Context, id string) (*models
 	return product, nil
 }
 
-func (s *ProductService) GetAllProducts(ctx context.Context) ([]*models.Product, error) {
-	// Lấy danh sách không dùng cache để đơn giản hóa cho bài toán demo
-	return s.Repo.FindAll(ctx)
+func (s *ProductService) GetAllProducts(ctx context.Context, limit int64, skip int64) ([]*models.Product, error) {
+    // Lấy danh sách kết hợp phân trang
+    return s.Repo.FindAll(ctx, limit, skip)
 }
 
 func (s *ProductService) UpdateProduct(ctx context.Context, id string, product *models.Product) error {

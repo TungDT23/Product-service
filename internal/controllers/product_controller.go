@@ -7,6 +7,7 @@ import (
 	"product-service/internal/models"
 	"product-service/internal/services"
 	"time"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
@@ -62,13 +63,24 @@ func (c *ProductController) GetProduct(ctx *gin.Context) {
 }
 
 func (c *ProductController) GetAllProducts(ctx *gin.Context) {
-	products, err := c.Service.GetAllProducts(ctx.Request.Context())
+	// Lấy tham số limit và page từ URL query (Mặc định: limit=10, page=1)
+	limit, _ := strconv.ParseInt(ctx.DefaultQuery("limit", "10"), 10, 64)
+	page, _ := strconv.ParseInt(ctx.DefaultQuery("page", "1"), 10, 64)
+	
+	// Tính toán số lượng bỏ qua (skip)
+	skip := (page - 1) * limit
+
+	products, err := c.Service.GetAllProducts(ctx.Request.Context(), limit, skip)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Lỗi lấy danh sách sản phẩm"})
+		ctx.JSON(500, gin.H{"error": err.Error()})
 		return
 	}
-
-	ctx.JSON(http.StatusOK, gin.H{"data": products})
+	
+	ctx.JSON(200, gin.H{
+		"page": page,
+		"limit": limit,
+		"data": products,
+	})
 }
 
 func (c *ProductController) UpdateProduct(ctx *gin.Context) {
@@ -128,7 +140,7 @@ func (c *ProductController) UploadProductImage(ctx *gin.Context) {
 	imageUrl := fmt.Sprintf("http://localhost:8082/uploads/%s", newFileName)
 
 	// 5. Gọi Service để lưu URL này vào MongoDB
-	err = c.ProductService.UploadImage(ctx.Request.Context(), productID, imageUrl)
+	err = c.Service.UploadImage(ctx.Request.Context(), productID, imageUrl)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Lưu URL vào database thất bại"})
 		return

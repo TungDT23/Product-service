@@ -33,6 +33,8 @@ func main() {
 		api.GET("/products/:id", controller.GetProduct)
 		api.PUT("/products/:id", controller.UpdateProduct)
 		api.DELETE("/products/:id", controller.DeleteProduct)
+
+		api.POST("/products/:id/upload", controller.UploadProductImage)
 	}
 
 	// 5. Chạy server ở cổng 8082 như chốt ban đầu
