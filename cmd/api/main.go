@@ -30,6 +30,9 @@ func main() {
 	{
 		api.POST("/products", controller.CreateProduct)
 		api.GET("/products", controller.GetAllProducts)
+
+		api.GET("/products/flash-sale", controller.GetFlashSaleProducts)
+
 		api.GET("/products/:id", controller.GetProduct)
 		api.PUT("/products/:id", controller.UpdateProduct)
 		api.DELETE("/products/:id", controller.DeleteProduct)

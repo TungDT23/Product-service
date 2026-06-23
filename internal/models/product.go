@@ -12,6 +12,14 @@ type Product struct {
 	Description string                 `bson:"description" json:"description"`
 	Price       float64                `bson:"price" json:"price"`
 	Stock       int                    `bson:"stock" json:"stock"`
+	Sold		int					   `bson:"sold" json:"sold"`
+	
+	// --- Cho Flash Sale ---
+	DiscountPrice   float64                `bson:"discount_price" json:"discount_price"`
+	DiscountPercent int                    `bson:"discount_percent" json:"discount_percent"`
+	SaleStartDate   *time.Time             `bson:"sale_start_date,omitempty" json:"sale_start_date"` // Dùng con trỏ để cho phép null
+	SaleEndDate     *time.Time             `bson:"sale_end_date,omitempty" json:"sale_end_date"`     // Dùng con trỏ để cho phép null
+
 	CategoryID  string                 `bson:"category_id" json:"category_id"`
 	VendorID    string                 `bson:"vendor_id" json:"vendor_id"`
 	Brand       string                 `bson:"brand" json:"brand"`

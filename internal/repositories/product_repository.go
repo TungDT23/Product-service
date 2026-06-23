@@ -87,3 +87,38 @@ func (r *ProductRepository) Delete(ctx context.Context, id string) error {
 	_, err = r.Collection.DeleteOne(ctx, bson.M{"_id": objectID})
 	return err
 }
+
+func (r *ProductRepository) FindFlashSales(ctx context.Context, limit int64) ([]*models.Product, error) {
+	var products []*models.Product
+	now := time.Now()
+
+	// 1. Điều kiện lọc: Đang sale (discount > 0) VÀ thời gian kết thúc > hiện tại
+	filter := bson.M{
+		"discount_percent": bson.M{"$gt": 0},
+		"sale_end_date":    bson.M{"$gt": now},
+		"status":           "ACTIVE",
+	}
+
+	// 2. Tùy chọn truy vấn: Ưu tiên xếp sản phẩm giảm giá sâu lên đầu
+	findOptions := options.Find()
+	findOptions.SetSort(bson.M{"discount_percent": -1}) // -1 là giảm dần (DESC)
+	findOptions.SetLimit(limit)
+
+	// 3. Thực thi truy vấn
+	cursor, err := r.Collection.Find(ctx, filter, findOptions)
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	// 4. Đọc dữ liệu
+	for cursor.Next(ctx) {
+		var product models.Product
+		if err := cursor.Decode(&product); err != nil {
+			return nil, err
+		}
+		products = append(products, &product)
+	}
+
+	return products, nil
+}

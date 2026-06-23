@@ -151,3 +151,19 @@ func (c *ProductController) UploadProductImage(ctx *gin.Context) {
 		"image_url": imageUrl,
 	})
 }
+
+func (c *ProductController) GetFlashSaleProducts(ctx *gin.Context) {
+	// Trang chủ thường chỉ lấy giới hạn số lượng (vd: top 10 sản phẩm)
+	limit, _ := strconv.ParseInt(ctx.DefaultQuery("limit", "10"), 10, 64)
+
+	products, err := c.Service.GetFlashSaleProducts(ctx.Request.Context(), limit)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Lỗi lấy dữ liệu Flash Sale"})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"limit": limit,
+		"data":  products,
+	})
+}

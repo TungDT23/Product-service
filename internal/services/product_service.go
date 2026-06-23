@@ -107,3 +107,7 @@ func (s *ProductService) UploadImage(ctx context.Context, id string, imageUrl st
 
 	return nil
 }
+
+func (s *ProductService) GetFlashSaleProducts(ctx context.Context, limit int64) ([]*models.Product, error) {
+	return s.Repo.FindFlashSales(ctx, limit)
+}
