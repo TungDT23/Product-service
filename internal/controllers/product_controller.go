@@ -1,7 +1,9 @@
 package controllers
 
 import (
+	"fmt"
 	"net/http"
+	"path/filepath"
 	"product-service/internal/models"
 	"product-service/internal/services"
 	"time"
@@ -96,4 +98,44 @@ func (c *ProductController) DeleteProduct(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{"message": "Xóa sản phẩm thành công"})
+}
+
+func (c *ProductController) UploadProductImage(ctx *gin.Context) {
+	productID := ctx.Param("id")
+
+	// 1. Nhận file từ form (key là "image")
+	file, err := ctx.FormFile("image")
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Không tìm thấy file ảnh trong request"})
+		return
+	}
+
+	// 2. Tạo tên file duy nhất để tránh bị trùng đè (thêm timestamp)
+	extension := filepath.Ext(file.Filename)
+	newFileName := fmt.Sprintf("%s_%d%s", productID, time.Now().Unix(), extension)
+	
+	// Đường dẫn lưu file vật lý trên server (Đảm bảo bạn đã tạo thư mục "uploads" ở thư mục gốc)
+	savePath := filepath.Join("uploads", newFileName)
+
+	// 3. Lưu file vào ổ cứng của Server
+	if err := ctx.SaveUploadedFile(file, savePath); err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Không thể lưu file"})
+		return
+	}
+
+	// 4. Tạo URL để Frontend có thể truy cập được ảnh
+	// Giả sử server Go chạy ở localhost:8082
+	imageUrl := fmt.Sprintf("http://localhost:8082/uploads/%s", newFileName)
+
+	// 5. Gọi Service để lưu URL này vào MongoDB
+	err = c.ProductService.UploadImage(ctx.Request.Context(), productID, imageUrl)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Lưu URL vào database thất bại"})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"message": "Upload ảnh thành công",
+		"image_url": imageUrl,
+	})
 }

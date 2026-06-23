@@ -83,3 +83,27 @@ func (s *ProductService) DeleteProduct(ctx context.Context, id string) error {
 
 	return nil
 }
+
+func (s *ProductService) UploadImage(ctx context.Context, id string, imageUrl string) error {
+	// 1. Lấy sản phẩm hiện tại ra
+	product, err := s.Repo.FindByID(ctx, id)
+	if err != nil {
+		return err
+	}
+
+	// 2. Thêm URL mới vào mảng Images
+	product.Images = append(product.Images, imageUrl)
+	product.UpdatedAt = time.Now()
+
+	// 3. Cập nhật lại vào MongoDB
+	err = s.Repo.Update(ctx, id, product)
+	if err != nil {
+		return err
+	}
+
+	// 4. Xóa Cache Redis để dữ liệu đồng bộ
+	cacheKey := fmt.Sprintf("product:%s", id)
+	s.RedisClient.Del(ctx, cacheKey)
+
+	return nil
+}

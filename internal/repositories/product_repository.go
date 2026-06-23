@@ -21,6 +21,8 @@ func NewProductRepository(db *mongo.Database) *ProductRepository {
 
 func (r *ProductRepository) Create(ctx context.Context, product *models.Product) error {
 	product.ID = primitive.NewObjectID()
+	product.CreatedAt = time.Now()
+	product.UpdatedAt = time.Now()
 	_, err := r.Collection.InsertOne(ctx, product)
 	return err
 }
@@ -40,22 +42,22 @@ func (r *ProductRepository) FindByID(ctx context.Context, id string) (*models.Pr
 	return &product, nil
 }
 
-func (r *ProductRepository) FindAll(ctx context.Context) ([]*models.Product, error) {
-	cursor, err := r.Collection.Find(ctx, bson.M{})
-	if err != nil {
-		return nil, err
-	}
-	defer cursor.Close(ctx)
+func (r *ProductRepository) FindAll(ctx context.Context, limit int64, skip int64) ([]*models.Product, error) {
+    findOptions := options.Find()
+    findOptions.SetLimit(limit)
+    findOptions.SetSkip(skip)
 
-	var products []*models.Product
-	for cursor.Next(ctx) {
-		var product models.Product
-		if err := cursor.Decode(&product); err != nil {
-			return nil, err
-		}
-		products = append(products, &product)
-	}
-	return products, nil
+    cursor, err := r.Collection.Find(ctx, bson.M{}, findOptions)
+    if err != nil {
+        return nil, err
+    }
+    defer cursor.Close(ctx)
+
+    var products []*models.Product
+    if err = cursor.All(ctx, &products); err != nil {
+        return nil, err
+    }
+    return products, nil
 }
 
 func (r *ProductRepository) Update(ctx context.Context, id string, updateData *models.Product) error {
@@ -63,6 +65,8 @@ func (r *ProductRepository) Update(ctx context.Context, id string, updateData *m
 	if err != nil {
 		return err
 	}
+
+	updateData.UpdatedAt = time.Now()
 
 	update := bson.M{
 		"$set": updateData,

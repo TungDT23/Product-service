@@ -23,6 +23,8 @@ func main() {
 	// 3. Khởi tạo Gin Router
 	router := gin.Default()
 
+	router.Static("/uploads", "./uploads")
+
 	// 4. Định nghĩa Routes
 	api := router.Group("/api/v1")
 	{
