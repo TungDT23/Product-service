@@ -140,9 +140,14 @@ func (c *ProductController) UploadProductImage(ctx *gin.Context) {
 		return
 	}
 
-	// 4. Tạo URL để Frontend có thể truy cập được ảnh
-	// Giả sử server Go chạy ở localhost:8082
-	imageUrl := fmt.Sprintf("http://localhost:8082/uploads/%s", newFileName)
+	// 💡 4. CHỮA CHÁY LOCALHOST: Tự động nhận diện HTTP hay HTTPS và Domain thực tế
+	scheme := "http"
+	if ctx.Request.TLS != nil || ctx.GetHeader("X-Forwarded-Proto") == "https" {
+		scheme = "https"
+	}
+	host := ctx.Request.Host // Sẽ là localhost:8082 nếu code ở máy, hoặc abc.onrender.com nếu trên mây
+	
+	imageUrl := fmt.Sprintf("%s://%s/uploads/%s", scheme, host, newFileName)
 
 	// 5. Gọi Service để lưu URL này vào MongoDB
 	err = c.Service.UploadImage(ctx.Request.Context(), productID, imageUrl)
@@ -223,15 +228,4 @@ func (c *ProductController) BulkUpdateStock(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{"message": "Cập nhật giỏ hàng thành công"})
-}
-
-func (c *ProductController) GetAllCategories(ctx *gin.Context) {
-	categories, err := c.Service.Repo.GetAllCategories(ctx.Request.Context())
-	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Không thể lấy danh mục"})
-		return
-	}
-	ctx.JSON(http.StatusOK, gin.H{
-		"data": categories,
-	})
 }

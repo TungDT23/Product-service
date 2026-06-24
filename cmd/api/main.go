@@ -22,13 +22,13 @@ func main() {
 	// 2. Khởi tạo các layer theo Dependency Injection
 	repo := repositories.NewProductRepository(config.DB)
 	service := services.NewProductService(repo, config.RedisClient)
-	controller := controllers.NewProductController(service)
+	productController := controllers.NewProductController(service)
+	categoryController := controllers.NewCategoryController(service)
 
 	// 3. Khởi tạo Gin Router
 	router := gin.Default()
 
 	// CẤU HÌNH CORS CHO FRONTEND
->>>>>>> CI/CD
 	router.Use(cors.New(cors.Config{
 		AllowOrigins:     []string{"https://frontend-soa-gray.vercel.app"}, // Chỉ cho phép link này gọi API
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
@@ -44,28 +44,28 @@ func main() {
 	// 4.1. PUBLIC API: Ai cũng xem được danh sách sản phẩm (Không cần middleware)
 	publicAPI := router.Group("/api/v1")
 	{
-		publicAPI.GET("/categories", controller.GetAllCategories)
+		publicAPI.GET("/categories", categoryController.GetAllCategories)
 
-		publicAPI.GET("/products", controller.GetAllProducts)
-		publicAPI.GET("/products/flash-sale", controller.GetFlashSaleProducts)
-		publicAPI.GET("/products/:id", controller.GetProduct)
+		publicAPI.GET("/products", productController.GetAllProducts)
+		publicAPI.GET("/products/flash-sale", productController.GetFlashSaleProducts)
+		publicAPI.GET("/products/:id", productController.GetProduct)
 	}
 
 	// 4.2. ADMIN API: Bắt buộc đăng nhập (RequireAuth) VÀ phải là Admin (RequireAdmin)
 	adminAPI := router.Group("/api/v1")
 	adminAPI.Use(middlewares.RequireAuth(), middlewares.RequireAdmin())
 	{
-		adminAPI.POST("/products", controller.CreateProduct)
-		adminAPI.PUT("/products/:id", controller.UpdateProduct)
-		adminAPI.DELETE("/products/:id", controller.DeleteProduct)
-		adminAPI.POST("/products/:id/upload", controller.UploadProductImage)
+		adminAPI.POST("/products", productController.CreateProduct)
+		adminAPI.PUT("/products/:id", productController.UpdateProduct)
+		adminAPI.DELETE("/products/:id", productController.DeleteProduct)
+		adminAPI.POST("/products/:id/upload", productController.UploadProductImage)
 	}
 
 	// 4.3. INTERNAL / USER API: Các thao tác mua bán
 	userAPI := router.Group("/api/v1/internal")
 	userAPI.Use(middlewares.RequireAuth()) // Bắt buộc đăng nhập (User hay Admin đều được)
 	{
-		userAPI.PUT("/products/bulk-stock", controller.BulkUpdateStock) // Hàm nhận mảng ID
+		userAPI.PUT("/products/bulk-stock", productController.BulkUpdateStock) // Hàm nhận mảng ID
 	}
 
 	// 5. CẤU HÌNH CỔNG ĐỘNG CHO RENDER
