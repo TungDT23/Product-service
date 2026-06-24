@@ -151,3 +151,14 @@ func (c *ProductController) UploadProductImage(ctx *gin.Context) {
 		"image_url": imageUrl,
 	})
 }
+
+func (c *ProductController) GetAllCategories(ctx *gin.Context) {
+	categories, err := c.Service.Repo.GetAllCategories(ctx.Request.Context())
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Không thể lấy danh mục"})
+		return
+	}
+	ctx.JSON(http.StatusOK, gin.H{
+		"data": categories,
+	})
+}
