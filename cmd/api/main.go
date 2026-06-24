@@ -37,7 +37,7 @@ func main() {
 
 	// CẤU HÌNH CORS CHO FRONTEND
 	router.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"https://frontend-soa-gray.vercel.app"}, // Chỉ cho phép link này gọi API
+		AllowOrigins:     []string{"https://frontend-soa-gray.vercel.app", "http://localhost:5173"}, // Chỉ cho phép link này gọi API
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization", "Accept"},
 		ExposeHeaders:    []string{"Content-Length"},
