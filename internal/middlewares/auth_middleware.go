@@ -3,7 +3,6 @@ package middlewares
 import (
 	"fmt"
 	"net/http"
-	"os"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -22,29 +21,39 @@ func RequireAuth() gin.HandlerFunc {
 
 		tokenString := strings.TrimPrefix(authHeader, "Bearer ")
 
-		// 💡 Tiền hành giải mã Token bằng JWT_SECRET
+		// Tiền hành giải mã Token bằng JWT_SECRET
 		token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 			// Kiểm tra xem thuật toán mã hóa có đúng chuẩn không
 			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 				return nil, fmt.Errorf("thuật toán mã hóa không hợp lệ: %v", token.Header["alg"])
 			}
-			// Lấy chìa khóa bí mật từ file .env ra để mở khóa
-			return []byte(os.Getenv("JWT_SECRET")), nil
+			// Vẫn giữ chuỗi hardcode để test lỗi
+			return []byte("lkasfjdslkdfjlasfjl"), nil
 		})
 
-		if err != nil || !token.Valid {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "Token không hợp lệ hoặc đã hết hạn"})
+		// 💡 ĐOẠN ĐÃ SỬA: Bắt và in lỗi chi tiết ra Postman
+		if err != nil {
+			fmt.Println("LỖI GIẢI MÃ TOKEN:", err.Error())
+			c.JSON(http.StatusUnauthorized, gin.H{
+				"error":        "Quá trình giải mã thất bại",
+				"chi_tiet_loi": err.Error(),
+			})
 			c.Abort()
 			return
 		}
 
-		// 💡 Lấy thông tin (Claims) từ trong Token ra
+		// 💡 ĐOẠN ĐÃ SỬA: Tách riêng phần kiểm tra tính hợp lệ
+		if !token.Valid {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Token đã hết hạn hoặc bị hỏng"})
+			c.Abort()
+			return
+		}
+
+		// Lấy thông tin (Claims) từ trong Token ra
 		if claims, ok := token.Claims.(jwt.MapClaims); ok {
-			// Lấy trường role (quyền) ra. 
-			// Lưu ý: Bạn cần hỏi lại bạn kia xem họ đặt tên trường quyền là "role", "is_admin" hay gì khác nhé!
 			role, ok := claims["role"].(string)
 			if !ok {
-				role = "user" // Nếu không có trường role, mặc định coi là user bình thường
+				role = "user"
 			}
 			
 			// Lưu role vào context để hàm RequireAdmin phía sau có thể kiểm tra
@@ -59,7 +68,7 @@ func RequireAuth() gin.HandlerFunc {
 	}
 }
 
-// Kiểm tra quyền Admin (Giữ nguyên như cũ)
+// Kiểm tra quyền Admin
 func RequireAdmin() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		role, exists := c.Get("role")

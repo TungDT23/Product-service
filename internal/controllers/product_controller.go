@@ -118,38 +118,51 @@ func (c *ProductController) DeleteProduct(ctx *gin.Context) {
 }
 
 func (c *ProductController) UploadImage(ctx *gin.Context) {
-	// 1. Nhận file từ form (key là "image")
-	file, err := ctx.FormFile("image")
+	// 1. Phân tích toàn bộ form dữ liệu gửi lên
+	form, err := ctx.MultipartForm()
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Không tìm thấy file ảnh trong request"})
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Lỗi định dạng form dữ liệu"})
 		return
 	}
 
-	// 2. Tạo tên file duy nhất
-	extension := filepath.Ext(file.Filename)
-	newFileName := fmt.Sprintf("img_%d%s", time.Now().UnixNano(), extension)
-	
-	savePath := filepath.Join("uploads", newFileName)
-
-	// 3. Lưu file vào ổ cứng của Server
-	if err := ctx.SaveUploadedFile(file, savePath); err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Không thể lưu file"})
+	// 2. Lấy danh sách các file từ key "images" (Lưu ý: đã đổi thành số nhiều)
+	files := form.File["images"]
+	if len(files) == 0 {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Không tìm thấy file ảnh nào"})
 		return
 	}
 
-	// 4. Nhận diện HTTP/HTTPS để tạo URL linh hoạt
+	// Chuẩn bị các biến để tạo đường dẫn
 	scheme := "http"
 	if ctx.Request.TLS != nil || ctx.GetHeader("X-Forwarded-Proto") == "https" {
 		scheme = "https"
 	}
 	host := ctx.Request.Host
-	
-	imageUrl := fmt.Sprintf("%s://%s/uploads/%s", scheme, host, newFileName)
 
-	// 5. Trả URL về luôn cho Frontend dùng (Không cần lưu Database ở bước này)
+	var imageUrls []string // Mảng chứa các link ảnh sau khi lưu thành công
+
+	// 3. Vòng lặp xử lý từng file
+	for _, file := range files {
+		// Tạo tên file độc nhất, có thể cộng thêm chuỗi ngẫu nhiên để không bị trùng nếu up file quá nhanh
+		newFileName := fmt.Sprintf("img_%d_%s", time.Now().UnixNano(), file.Filename)
+		savePath := filepath.Join("uploads", newFileName)
+
+		// Lưu file vào ổ cứng
+		if err := ctx.SaveUploadedFile(file, savePath); err != nil {
+			// Nếu 1 file lỗi, báo log và bỏ qua file đó, chạy tiếp file sau
+			fmt.Println("Lỗi lưu file:", err)
+			continue
+		}
+
+		// Ghép thành link hoàn chỉnh và nhét vào mảng
+		url := fmt.Sprintf("%s://%s/uploads/%s", scheme, host, newFileName)
+		imageUrls = append(imageUrls, url)
+	}
+
+	// 4. Trả về mảng các đường link
 	ctx.JSON(http.StatusOK, gin.H{
-		"message":   "Upload ảnh thành công",
-		"image_url": imageUrl,
+		"message":    "Upload ảnh thành công",
+		"image_urls": imageUrls, // Trả về dạng mảng []string
 	})
 }
 
