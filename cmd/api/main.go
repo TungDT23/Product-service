@@ -6,6 +6,7 @@ import (
 	"product-service/internal/controllers"
 	"product-service/internal/repositories"
 	"product-service/internal/services"
+	"product-service/internal/middlewares"
 
 	"github.com/gin-gonic/gin"
 )
@@ -26,24 +27,29 @@ func main() {
 	router.Static("/uploads", "./uploads")
 
 	// 4. Định nghĩa Routes
-	api := router.Group("/api/v1")
+	// 4.1. PUBLIC API: Ai cũng xem được danh sách sản phẩm (Không cần middleware)
+	publicAPI := router.Group("/api/v1")
 	{
-		api.POST("/products", controller.CreateProduct)
-		api.GET("/products", controller.GetAllProducts)
-
-		api.GET("/products/flash-sale", controller.GetFlashSaleProducts)
-
-		api.GET("/products/:id", controller.GetProduct)
-		api.PUT("/products/:id", controller.UpdateProduct)
-		api.DELETE("/products/:id", controller.DeleteProduct)
-
-		api.POST("/products/:id/upload", controller.UploadProductImage)
+		publicAPI.GET("/products", controller.GetAllProducts)
+		publicAPI.GET("/products/flash-sale", controller.GetFlashSaleProducts)
+		publicAPI.GET("/products/:id", controller.GetProduct)
 	}
 
-	// --- 💡 CỤM API NỘI BỘ (Các Microservices khác gọi) ---
-	internalAPI := router.Group("/api/v1/internal")
+	// 4.2. ADMIN API: Bắt buộc đăng nhập (RequireAuth) VÀ phải là Admin (RequireAdmin)
+	adminAPI := router.Group("/api/v1")
+	adminAPI.Use(middlewares.RequireAuth(), middlewares.RequireAdmin())
 	{
-		internalAPI.PUT("/products/:id/stock", controller.UpdateStock)
+		adminAPI.POST("/products", controller.CreateProduct)
+		adminAPI.PUT("/products/:id", controller.UpdateProduct)
+		adminAPI.DELETE("/products/:id", controller.DeleteProduct)
+		adminAPI.POST("/products/:id/upload", controller.UploadProductImage)
+	}
+
+	// 4.3. INTERNAL / USER API: Các thao tác mua bán
+	userAPI := router.Group("/api/v1/internal")
+	userAPI.Use(middlewares.RequireAuth()) // Bắt buộc đăng nhập (User hay Admin đều được)
+	{
+		userAPI.PUT("/products/bulk-stock", controller.BulkUpdateStock) // Hàm nhận mảng ID
 	}
 
 	// 5. Chạy server ở cổng 8082 như chốt ban đầu

@@ -183,3 +183,38 @@ func (r *ProductRepository) UpdateStockAndSold(ctx context.Context, id string, q
 
 	return nil
 }
+
+func (r *ProductRepository) BulkUpdateStock(ctx context.Context, items map[string]int) error {
+	var models []mongo.WriteModel
+
+	for id, quantity := range items {
+		objID, err := primitive.ObjectIDFromHex(id)
+		if err != nil {
+			return err // Báo lỗi nếu có ID nào không hợp lệ
+		}
+
+		// Tạo lệnh cập nhật cho từng sản phẩm
+		update := bson.M{
+			"$inc": bson.M{
+				"stock": -quantity,
+				"sold":  quantity,
+			},
+			"$set": bson.M{
+				"updated_at": time.Now(),
+			},
+		}
+
+		model := mongo.NewUpdateOneModel().
+			SetFilter(bson.M{"_id": objID}).
+			SetUpdate(update)
+
+		models = append(models, model)
+	}
+
+	// Chạy toàn bộ mảng lệnh trong 1 lần
+	if len(models) > 0 {
+		_, err := r.Collection.BulkWrite(ctx, models)
+		return err
+	}
+	return nil
+}

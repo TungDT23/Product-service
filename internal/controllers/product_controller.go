@@ -194,3 +194,33 @@ func (c *ProductController) UpdateStock(ctx *gin.Context) {
 
 	ctx.JSON(http.StatusOK, gin.H{"message": "Cập nhật kho và doanh số thành công"})
 }
+
+type OrderItem struct {
+	ProductID string `json:"product_id" binding:"required"`
+	Quantity  int    `json:"quantity" binding:"required,min=1"`
+}
+
+func (c *ProductController) BulkUpdateStock(ctx *gin.Context) {
+	var requestBody struct {
+		Items []OrderItem `json:"items" binding:"required,dive"`
+	}
+
+	if err := ctx.ShouldBindJSON(&requestBody); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Dữ liệu mảng sản phẩm không hợp lệ"})
+		return
+	}
+
+	// Chuyển đổi mảng thành map map[id]quantity để ném xuống Service
+	updateMap := make(map[string]int)
+	for _, item := range requestBody.Items {
+		updateMap[item.ProductID] = item.Quantity
+	}
+
+	err := c.Service.BulkUpdateStock(ctx.Request.Context(), updateMap)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Lỗi cập nhật kho hàng loạt"})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"message": "Cập nhật giỏ hàng thành công"})
+}

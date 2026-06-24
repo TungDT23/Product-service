@@ -115,3 +115,7 @@ func (s *ProductService) GetFlashSaleProducts(ctx context.Context, limit int64) 
 func (s *ProductService) UpdateStockAndSold(ctx context.Context, id string, quantity int) error {
 	return s.Repo.UpdateStockAndSold(ctx, id, quantity)
 }
+
+func (s *ProductService) BulkUpdateStock(ctx context.Context, items map[string]int) error {
+	return s.Repo.BulkUpdateStock(ctx, items)
+}
