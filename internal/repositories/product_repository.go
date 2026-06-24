@@ -236,17 +236,14 @@ func (r *ProductRepository) GetAllCategories(ctx context.Context) ([]*models.Cat
 	return categories, nil
 }
 
-// 2. Đảm bảo Category tồn tại (Dùng lúc Thêm SP)
-func (r *ProductRepository) EnsureCategoryExists(ctx context.Context, categoryName string) error {
-	count, err := r.CategoryCollection.CountDocuments(ctx, bson.M{"name": categoryName})
+// 2. Kiểm tra Category có tồn tại không (Thay cho hàm EnsureCategoryExists cũ)
+func (r *ProductRepository) CheckCategoryExists(ctx context.Context, categoryID string) (bool, error) {
+	// Giả sử bảng categories lưu ID dưới dạng text (name)
+	count, err := r.CategoryCollection.CountDocuments(ctx, bson.M{"name": categoryID})
 	if err != nil {
-		return err
+		return false, err
 	}
-	if count == 0 { // Nếu chưa có thì tự động tạo mới
-		_, err := r.CategoryCollection.InsertOne(ctx, bson.M{"name": categoryName})
-		return err
-	}
-	return nil
+	return count > 0, nil
 }
 
 // 3. Đếm số sản phẩm trong 1 Category (Dùng lúc Xóa SP)

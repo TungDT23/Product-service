@@ -58,7 +58,8 @@ func main() {
 		adminAPI.POST("/products", productController.CreateProduct)
 		adminAPI.PUT("/products/:id", productController.UpdateProduct)
 		adminAPI.DELETE("/products/:id", productController.DeleteProduct)
-		adminAPI.POST("/products/:id/upload", productController.UploadProductImage)
+
+		adminAPI.POST("/upload", productController.UploadImage)
 	}
 
 	// 4.3. INTERNAL / USER API: Các thao tác mua bán

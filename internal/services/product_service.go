@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"errors"
 	"product-service/internal/models"
 	"product-service/internal/repositories"
 	"time"
@@ -24,10 +25,20 @@ func NewProductService(repo *repositories.ProductRepository, redisClient *redis.
 }
 
 func (s *ProductService) CreateProduct(ctx context.Context, product *models.Product) error {
-	if product.CategoryID != ""{
-		_ = s.Repo.EnsureCategoryExists(ctx, product.CategoryID)
+	// BẮT BUỘC Category phải tồn tại từ trước
+	if product.CategoryID != "" {
+		exists, err := s.Repo.CheckCategoryExists(ctx, product.CategoryID)
+		if err != nil {
+			return err
+		}
+		if !exists {
+			return errors.New("danh mục không tồn tại, vui lòng chọn danh mục hợp lệ")
+		}
+	} else {
+		return errors.New("category_id không được để trống")
 	}
-	
+
+	// Nếu mọi thứ hợp lệ, mới lưu sản phẩm vào DB
 	return s.Repo.Create(ctx, product)
 }
 
@@ -95,30 +106,6 @@ func (s *ProductService) DeleteProduct(ctx context.Context, id string) error {
 			_ = s.Repo.DeleteCategoryByName(ctx, product.CategoryID)
 		}
 	}
-
-	return nil
-}
-
-func (s *ProductService) UploadImage(ctx context.Context, id string, imageUrl string) error {
-	// 1. Lấy sản phẩm hiện tại ra
-	product, err := s.Repo.FindByID(ctx, id)
-	if err != nil {
-		return err
-	}
-
-	// 2. Thêm URL mới vào mảng Images
-	product.Images = append(product.Images, imageUrl)
-	product.UpdatedAt = time.Now()
-
-	// 3. Cập nhật lại vào MongoDB
-	err = s.Repo.Update(ctx, id, product)
-	if err != nil {
-		return err
-	}
-
-	// 4. Xóa Cache Redis để dữ liệu đồng bộ
-	cacheKey := fmt.Sprintf("product:%s", id)
-	s.RedisClient.Del(ctx, cacheKey)
 
 	return nil
 }

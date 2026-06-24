@@ -117,9 +117,7 @@ func (c *ProductController) DeleteProduct(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, gin.H{"message": "Xóa sản phẩm thành công"})
 }
 
-func (c *ProductController) UploadProductImage(ctx *gin.Context) {
-	productID := ctx.Param("id")
-
+func (c *ProductController) UploadImage(ctx *gin.Context) {
 	// 1. Nhận file từ form (key là "image")
 	file, err := ctx.FormFile("image")
 	if err != nil {
@@ -127,11 +125,10 @@ func (c *ProductController) UploadProductImage(ctx *gin.Context) {
 		return
 	}
 
-	// 2. Tạo tên file duy nhất để tránh bị trùng đè (thêm timestamp)
+	// 2. Tạo tên file duy nhất
 	extension := filepath.Ext(file.Filename)
-	newFileName := fmt.Sprintf("%s_%d%s", productID, time.Now().Unix(), extension)
+	newFileName := fmt.Sprintf("img_%d%s", time.Now().UnixNano(), extension)
 	
-	// Đường dẫn lưu file vật lý trên server (Đảm bảo bạn đã tạo thư mục "uploads" ở thư mục gốc)
 	savePath := filepath.Join("uploads", newFileName)
 
 	// 3. Lưu file vào ổ cứng của Server
@@ -140,24 +137,18 @@ func (c *ProductController) UploadProductImage(ctx *gin.Context) {
 		return
 	}
 
-	// 💡 4. CHỮA CHÁY LOCALHOST: Tự động nhận diện HTTP hay HTTPS và Domain thực tế
+	// 4. Nhận diện HTTP/HTTPS để tạo URL linh hoạt
 	scheme := "http"
 	if ctx.Request.TLS != nil || ctx.GetHeader("X-Forwarded-Proto") == "https" {
 		scheme = "https"
 	}
-	host := ctx.Request.Host // Sẽ là localhost:8082 nếu code ở máy, hoặc abc.onrender.com nếu trên mây
+	host := ctx.Request.Host
 	
 	imageUrl := fmt.Sprintf("%s://%s/uploads/%s", scheme, host, newFileName)
 
-	// 5. Gọi Service để lưu URL này vào MongoDB
-	err = c.Service.UploadImage(ctx.Request.Context(), productID, imageUrl)
-	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Lưu URL vào database thất bại"})
-		return
-	}
-
+	// 5. Trả URL về luôn cho Frontend dùng (Không cần lưu Database ở bước này)
 	ctx.JSON(http.StatusOK, gin.H{
-		"message": "Upload ảnh thành công",
+		"message":   "Upload ảnh thành công",
 		"image_url": imageUrl,
 	})
 }
