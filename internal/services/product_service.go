@@ -24,6 +24,10 @@ func NewProductService(repo *repositories.ProductRepository, redisClient *redis.
 }
 
 func (s *ProductService) CreateProduct(ctx context.Context, product *models.Product) error {
+	if product.CategoryID != ""{
+		_ = s.Repo.EnsureCategoryExists(ctx, product.CategoryID)
+	}
+	
 	return s.Repo.Create(ctx, product)
 }
 
@@ -72,14 +76,25 @@ func (s *ProductService) UpdateProduct(ctx context.Context, id string, product *
 }
 
 func (s *ProductService) DeleteProduct(ctx context.Context, id string) error {
-	err := s.Repo.Delete(ctx, id)
+	// 1. Lấy thông tin sản phẩm ra trước (Giả sử bạn đã có hàm GetProductByID trong Repo)
+	product, err := s.Repo.GetProductByID(ctx, id)
 	if err != nil {
 		return err
 	}
 
-	// Cache Invalidation
-	cacheKey := fmt.Sprintf("product:%s", id)
-	s.RedisClient.Del(ctx, cacheKey)
+	// 2. Thực hiện xóa sản phẩm (Code cũ của bạn)
+	err = s.Repo.Delete(ctx, id)
+	if err != nil {
+		return err
+	}
+
+	// 💡 3. Kiểm tra dọn dẹp Category
+	if product.CategoryID != "" {
+		count, _ := s.Repo.CountProductsByCategory(ctx, product.CategoryID)
+		if count == 0 { // Hết sạch sản phẩm -> Tiêu diệt danh mục
+			_ = s.Repo.DeleteCategoryByName(ctx, product.CategoryID)
+		}
+	}
 
 	return nil
 }

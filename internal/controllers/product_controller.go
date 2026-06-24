@@ -224,3 +224,14 @@ func (c *ProductController) BulkUpdateStock(ctx *gin.Context) {
 
 	ctx.JSON(http.StatusOK, gin.H{"message": "Cập nhật giỏ hàng thành công"})
 }
+
+func (c *ProductController) GetAllCategories(ctx *gin.Context) {
+	categories, err := c.Service.Repo.GetAllCategories(ctx.Request.Context())
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Không thể lấy danh mục"})
+		return
+	}
+	ctx.JSON(http.StatusOK, gin.H{
+		"data": categories,
+	})
+}

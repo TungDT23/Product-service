@@ -14,11 +14,13 @@ import (
 
 type ProductRepository struct {
 	Collection *mongo.Collection
+	CategoryCollection *mongo.Collection
 }
 
 func NewProductRepository(db *mongo.Database) *ProductRepository {
 	return &ProductRepository{
 		Collection: db.Collection("products"),
+		CategoryCollection: db.Collection("categories"),
 	}
 }
 
@@ -217,4 +219,41 @@ func (r *ProductRepository) BulkUpdateStock(ctx context.Context, items map[strin
 		return err
 	}
 	return nil
+}
+
+// 1. Lấy toàn bộ danh sách Category
+func (r *ProductRepository) GetAllCategories(ctx context.Context) ([]bson.M, error) {
+	cursor, err := r.CategoryCollection.Find(ctx, bson.M{})
+	if err != nil {
+		return nil, err
+	}
+	var categories []bson.M
+	if err = cursor.All(ctx, &categories); err != nil {
+		return nil, err
+	}
+	return categories, nil
+}
+
+// 2. Đảm bảo Category tồn tại (Dùng lúc Thêm SP)
+func (r *ProductRepository) EnsureCategoryExists(ctx context.Context, categoryName string) error {
+	count, err := r.CategoryCollection.CountDocuments(ctx, bson.M{"name": categoryName})
+	if err != nil {
+		return err
+	}
+	if count == 0 { // Nếu chưa có thì tự động tạo mới
+		_, err := r.CategoryCollection.InsertOne(ctx, bson.M{"name": categoryName})
+		return err
+	}
+	return nil
+}
+
+// 3. Đếm số sản phẩm trong 1 Category (Dùng lúc Xóa SP)
+func (r *ProductRepository) CountProductsByCategory(ctx context.Context, categoryName string) (int64, error) {
+	return r.Collection.CountDocuments(ctx, bson.M{"category_id": categoryName})
+}
+
+// 4. Xóa Category (Dùng lúc Xóa SP)
+func (r *ProductRepository) DeleteCategoryByName(ctx context.Context, categoryName string) error {
+	_, err := r.CategoryCollection.DeleteOne(ctx, bson.M{"name": categoryName})
+	return err
 }
