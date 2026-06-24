@@ -1,22 +1,12 @@
-version: '3.8'
+version: "3.8"
 
 services:
-  mongodb:
-    image: mongo:latest
-    container_name: product_mongodb
+  product-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
     ports:
-      - "27017:27017"
-    volumes:
-      - mongodb_data:/data/db
-    environment:
-      - MONGO_INITDB_ROOT_USERNAME=root
-      - MONGO_INITDB_ROOT_PASSWORD=secret
-
-  redis:
-    image: redis:alpine
-    container_name: product_redis
-    ports:
-      - "6379:6379"
-
-volumes:
-  mongodb_data:
+      - "8082:8082" # Ánh xạ cổng ra ngoài
+    env_file:
+      - .env # Báo cho Docker biết để đọc file .env ở máy bạn
+    restart: unless-stopped
