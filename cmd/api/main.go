@@ -2,12 +2,15 @@ package main
 
 import (
 	"log"
+	"os"
+	"time"
 	"product-service/internal/config"
 	"product-service/internal/controllers"
 	"product-service/internal/repositories"
 	"product-service/internal/services"
 	"product-service/internal/middlewares"
 
+	"github.com/gin-gonic/cors"
 	"github.com/gin-gonic/gin"
 )
 
@@ -23,6 +26,16 @@ func main() {
 
 	// 3. Khởi tạo Gin Router
 	router := gin.Default()
+
+	// CẤU HÌNH CORS CHO FRONTEND
+	router.Use(cors.New(cors.Config{
+		AllowOrigins:     []string{"https://frontend-soa-gray.vercel.app"}, // Chỉ cho phép link này gọi API
+		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization", "Accept"},
+		ExposeHeaders:    []string{"Content-Length"},
+		AllowCredentials: true,
+		MaxAge:           12 * time.Hour,
+	}))
 
 	router.Static("/uploads", "./uploads")
 
@@ -54,9 +67,14 @@ func main() {
 		userAPI.PUT("/products/bulk-stock", controller.BulkUpdateStock) // Hàm nhận mảng ID
 	}
 
-	// 5. Chạy server ở cổng 8082 như chốt ban đầu
-	log.Println("Server đang chạy tại http://localhost:8082")
-	if err := router.Run(":8082"); err != nil {
+	// 5. CẤU HÌNH CỔNG ĐỘNG CHO RENDER
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8082" // Nếu chạy ở máy tính bạn thì vẫn dùng 8082
+	}
+
+	log.Printf("Server đang khởi chạy tại port %s...", port)
+	if err := router.Run(":" + port); err != nil {
 		log.Fatal("Lỗi khởi chạy server:", err)
 	}
 }
