@@ -40,6 +40,12 @@ func main() {
 		api.POST("/products/:id/upload", controller.UploadProductImage)
 	}
 
+	// --- 💡 CỤM API NỘI BỘ (Các Microservices khác gọi) ---
+	internalAPI := router.Group("/api/v1/internal")
+	{
+		internalAPI.PUT("/products/:id/stock", controller.UpdateStock)
+	}
+
 	// 5. Chạy server ở cổng 8082 như chốt ban đầu
 	log.Println("Server đang chạy tại http://localhost:8082")
 	if err := router.Run(":8082"); err != nil {

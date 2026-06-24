@@ -63,23 +63,28 @@ func (c *ProductController) GetProduct(ctx *gin.Context) {
 }
 
 func (c *ProductController) GetAllProducts(ctx *gin.Context) {
-	// Lấy tham số limit và page từ URL query (Mặc định: limit=10, page=1)
+	// Lấy tham số phân trang
 	limit, _ := strconv.ParseInt(ctx.DefaultQuery("limit", "10"), 10, 64)
 	page, _ := strconv.ParseInt(ctx.DefaultQuery("page", "1"), 10, 64)
-	
-	// Tính toán số lượng bỏ qua (skip)
 	skip := (page - 1) * limit
 
-	products, err := c.Service.GetAllProducts(ctx.Request.Context(), limit, skip)
+	// HỨNG CÁC THAM SỐ LỌC TỪ URL
+	search := ctx.Query("search")
+	category := ctx.Query("category_id")
+	minPrice, _ := strconv.ParseFloat(ctx.DefaultQuery("min_price", "0"), 64)
+	maxPrice, _ := strconv.ParseFloat(ctx.DefaultQuery("max_price", "0"), 64)
+
+	// Truyền dữ liệu xuống Service
+	products, err := c.Service.GetAllProducts(ctx.Request.Context(), limit, skip, search, category, minPrice, maxPrice)
 	if err != nil {
-		ctx.JSON(500, gin.H{"error": err.Error()})
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	
-	ctx.JSON(200, gin.H{
-		"page": page,
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"page":  page,
 		"limit": limit,
-		"data": products,
+		"data":  products,
 	})
 }
 
@@ -166,4 +171,26 @@ func (c *ProductController) GetFlashSaleProducts(ctx *gin.Context) {
 		"limit": limit,
 		"data":  products,
 	})
+}
+
+func (c *ProductController) UpdateStock(ctx *gin.Context) {
+	id := ctx.Param("id")
+
+	// Tạo một struct ẩn (anonymous struct) để hứng dữ liệu quantity từ JSON
+	var requestBody struct {
+		Quantity int `json:"quantity" binding:"required"`
+	}
+
+	if err := ctx.ShouldBindJSON(&requestBody); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Dữ liệu không hợp lệ hoặc thiếu số lượng (quantity)"})
+		return
+	}
+
+	err := c.Service.UpdateStockAndSold(ctx.Request.Context(), id, requestBody.Quantity)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"message": "Cập nhật kho và doanh số thành công"})
 }

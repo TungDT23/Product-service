@@ -53,9 +53,9 @@ func (s *ProductService) GetProductByID(ctx context.Context, id string) (*models
 	return product, nil
 }
 
-func (s *ProductService) GetAllProducts(ctx context.Context, limit int64, skip int64) ([]*models.Product, error) {
-    // Lấy danh sách kết hợp phân trang
-    return s.Repo.FindAll(ctx, limit, skip)
+func (s *ProductService) GetAllProducts(ctx context.Context, limit int64, skip int64, search string, category string, minPrice float64, maxPrice float64) ([]*models.Product, error) {
+	// Truyền toàn bộ tham số lọc xuống Repository
+	return s.Repo.FindAll(ctx, limit, skip, search, category, minPrice, maxPrice)
 }
 
 func (s *ProductService) UpdateProduct(ctx context.Context, id string, product *models.Product) error {
@@ -110,4 +110,8 @@ func (s *ProductService) UploadImage(ctx context.Context, id string, imageUrl st
 
 func (s *ProductService) GetFlashSaleProducts(ctx context.Context, limit int64) ([]*models.Product, error) {
 	return s.Repo.FindFlashSales(ctx, limit)
+}
+
+func (s *ProductService) UpdateStockAndSold(ctx context.Context, id string, quantity int) error {
+	return s.Repo.UpdateStockAndSold(ctx, id, quantity)
 }

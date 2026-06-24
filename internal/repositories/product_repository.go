@@ -1,6 +1,7 @@
 package repositories
 
 import (
+	"errors"
 	"context"
 	"time"
 	"product-service/internal/models"
@@ -44,22 +45,53 @@ func (r *ProductRepository) FindByID(ctx context.Context, id string) (*models.Pr
 	return &product, nil
 }
 
-func (r *ProductRepository) FindAll(ctx context.Context, limit int64, skip int64) ([]*models.Product, error) {
-    findOptions := options.Find()
-    findOptions.SetLimit(limit)
-    findOptions.SetSkip(skip)
+func (r *ProductRepository) FindAll(ctx context.Context, limit int64, skip int64, search string, category string, minPrice float64, maxPrice float64) ([]*models.Product, error) {
+	var products []*models.Product
 
-    cursor, err := r.Collection.Find(ctx, bson.M{}, findOptions)
-    if err != nil {
-        return nil, err
-    }
-    defer cursor.Close(ctx)
+	// 1. Khởi tạo bộ lọc cơ bản (chỉ lấy sản phẩm đang ACTIVE)
+	filter := bson.M{"status": "ACTIVE"}
 
-    var products []*models.Product
-    if err = cursor.All(ctx, &products); err != nil {
-        return nil, err
-    }
-    return products, nil
+	// 2. Lọc theo tên (Tìm kiếm gần đúng Regex, chữ "i" là không phân biệt hoa thường)
+	if search != "" {
+		filter["name"] = bson.M{"$regex": primitive.Regex{Pattern: search, Options: "i"}}
+	}
+
+	// 3. Lọc theo danh mục
+	if category != "" {
+		filter["category_id"] = category
+	}
+
+	// 4. Lọc theo khoảng giá
+	if minPrice > 0 || maxPrice > 0 {
+		priceFilter := bson.M{}
+		if minPrice > 0 {
+			priceFilter["$gte"] = minPrice // $gte: Lớn hơn hoặc bằng
+		}
+		if maxPrice > 0 {
+			priceFilter["$lte"] = maxPrice // $lte: Nhỏ hơn hoặc bằng
+		}
+		filter["price"] = priceFilter
+	}
+
+	findOptions := options.Find()
+	findOptions.SetLimit(limit)
+	findOptions.SetSkip(skip)
+
+	cursor, err := r.Collection.Find(ctx, filter, findOptions)
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	for cursor.Next(ctx) {
+		var product models.Product
+		if err := cursor.Decode(&product); err != nil {
+			return nil, err
+		}
+		products = append(products, &product)
+	}
+
+	return products, nil
 }
 
 func (r *ProductRepository) Update(ctx context.Context, id string, updateData *models.Product) error {
@@ -121,4 +153,33 @@ func (r *ProductRepository) FindFlashSales(ctx context.Context, limit int64) ([]
 	}
 
 	return products, nil
+}
+
+func (r *ProductRepository) UpdateStockAndSold(ctx context.Context, id string, quantity int) error {
+	objID, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return err
+	}
+
+	// Dùng $inc (increment) để cộng/trừ thẳng trên DB, chống lỗi nhiều người mua cùng lúc
+	update := bson.M{
+		"$inc": bson.M{
+			"stock": -quantity, // Trừ đi số lượng khách mua
+			"sold":  quantity,  // Cộng vào số lượng đã bán
+		},
+		"$set": bson.M{
+			"updated_at": time.Now(),
+		},
+	}
+
+	result, err := r.Collection.UpdateOne(ctx, bson.M{"_id": objID}, update)
+	if err != nil {
+		return err
+	}
+	
+	if result.MatchedCount == 0 {
+		return errors.New("không tìm thấy sản phẩm")
+	}
+
+	return nil
 }
