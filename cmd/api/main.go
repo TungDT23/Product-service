@@ -27,7 +27,8 @@ func main() {
 	// 3. Khởi tạo Gin Router
 	router := gin.Default()
 
-	// Cấu hình CORS cho FRONTEND
+	// CẤU HÌNH CORS CHO FRONTEND
+>>>>>>> CI/CD
 	router.Use(cors.New(cors.Config{
 		AllowOrigins:     []string{"https://frontend-soa-gray.vercel.app"}, // Chỉ cho phép link này gọi API
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
@@ -67,7 +68,7 @@ func main() {
 		userAPI.PUT("/products/bulk-stock", controller.BulkUpdateStock) // Hàm nhận mảng ID
 	}
 
-	// 💡 5. CẤU HÌNH CỔNG ĐỘNG CHO RENDER
+	// 5. CẤU HÌNH CỔNG ĐỘNG CHO RENDER
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8082" // Nếu chạy ở máy tính bạn thì vẫn dùng 8082
