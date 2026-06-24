@@ -8,13 +8,11 @@ import (
 	"time"
 
 	"github.com/joho/godotenv"
-	"github.com/redis/go-redis/v9"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 var DB *mongo.Database
-var RedisClient *redis.Client
 
 func ConnectDB() {
 	// 1. Load các biến môi trường từ file .env
@@ -55,21 +53,3 @@ func ConnectDB() {
 	DB = client.Database(dbName)
 }
 
-func ConnectRedis() {
-	// Kết nối Redis (Giữ nguyên cấu hình local của bạn qua Docker)
-	RedisClient = redis.NewClient(&redis.Options{
-		Addr:     "localhost:6379",
-		Password: "", // no password set
-		DB:       0,  // use default DB
-	})
-
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	_, err := RedisClient.Ping(ctx).Result()
-	if err != nil {
-		log.Fatal("Lỗi kết nối Redis:", err)
-	}
-
-	fmt.Println("Đã kết nối thành công tới Redis!")
-}
