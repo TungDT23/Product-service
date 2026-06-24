@@ -30,6 +30,8 @@ func main() {
 	// 4.1. PUBLIC API: Ai cũng xem được danh sách sản phẩm (Không cần middleware)
 	publicAPI := router.Group("/api/v1")
 	{
+		publicAPI.GET("/categories", controller.GetAllCategories)
+
 		publicAPI.GET("/products", controller.GetAllProducts)
 		publicAPI.GET("/products/flash-sale", controller.GetFlashSaleProducts)
 		publicAPI.GET("/products/:id", controller.GetProduct)

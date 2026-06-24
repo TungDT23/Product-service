@@ -77,7 +77,7 @@ func (s *ProductService) UpdateProduct(ctx context.Context, id string, product *
 
 func (s *ProductService) DeleteProduct(ctx context.Context, id string) error {
 	// 1. Lấy thông tin sản phẩm ra trước (Giả sử bạn đã có hàm GetProductByID trong Repo)
-	product, err := s.Repo.GetProductByID(ctx, id)
+	product, err := s.Repo.FindByID(ctx, id)
 	if err != nil {
 		return err
 	}
