@@ -221,16 +221,18 @@ func (r *ProductRepository) BulkUpdateStock(ctx context.Context, items map[strin
 	return nil
 }
 
-// 1. Lấy toàn bộ danh sách Category
-func (r *ProductRepository) GetAllCategories(ctx context.Context) ([]bson.M, error) {
+// 1. Lấy toàn bộ danh sách Category (Đã chuẩn hóa dùng Model)
+func (r *ProductRepository) GetAllCategories(ctx context.Context) ([]*models.Category, error) {
 	cursor, err := r.CategoryCollection.Find(ctx, bson.M{})
 	if err != nil {
 		return nil, err
 	}
-	var categories []bson.M
+	
+	var categories []*models.Category
 	if err = cursor.All(ctx, &categories); err != nil {
 		return nil, err
 	}
+	
 	return categories, nil
 }
 
