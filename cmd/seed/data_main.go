@@ -66,6 +66,7 @@ func main() {
 
 		cat := models.Category{
 			ID:   primitive.NewObjectID(),
+			Slug: getCell(row, 0),
 			Name: getCell(row, 1), // Tên hiển thị (cột 1)
 		}
 		categories = append(categories, cat)
