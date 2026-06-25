@@ -29,7 +29,7 @@ func ConnectDB() {
 		log.Fatal("Lỗi: Chưa cấu hình biến môi trường MONGO_URI trong file .env")
 	}
 	if dbName == "" {
-		dbName = "ecommerce_product" // Giữ nguyên tên DB cũ của bạn
+		dbName = "ecommerce_product_db" // Giữ nguyên tên DB cũ của bạn
 	}
 
 	// 3. Kết nối MongoDB Cloud
