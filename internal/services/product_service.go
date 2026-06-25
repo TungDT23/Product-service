@@ -121,3 +121,8 @@ func (s *ProductService) UpdateStockAndSold(ctx context.Context, id string, quan
 func (s *ProductService) BulkUpdateStock(ctx context.Context, items map[string]int) error {
 	return s.Repo.BulkUpdateStock(ctx, items)
 }
+
+func (s *ProductService) GetAllWithoutPagination(ctx context.Context) ([]*models.Product, error) {
+    // Tên biến Repo ở đây tùy thuộc vào struct Service của bạn (ví dụ s.repo hoặc s.productRepo)
+    return s.Repo.GetAllWithoutPagination(ctx) 
+}

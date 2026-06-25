@@ -6,7 +6,6 @@ import (
 	"path/filepath"
 	"product-service/internal/models"
 	"product-service/internal/services"
-	"product-service/internal/repositories"
 	"time"
 	"context"
 	"strconv"
@@ -16,7 +15,6 @@ import (
 
 type ProductController struct {
 	Service *services.ProductService
-	productRepo *repositories.ProductRepository
 }
 
 func NewProductController(service *services.ProductService) *ProductController {
@@ -244,7 +242,7 @@ func (ctrl *ProductController) GetAllProductsNoPagination(c *gin.Context) {
 	// 2. CHÚ Ý TẠI ĐÂY: Thay chữ "Repo" thành tên chuẩn của bạn.
 	// Ví dụ: ctrl.productRepo.GetAllWithoutPagination(ctx)
 	// Hoặc: ctrl.ProductService.GetAllWithoutPagination(ctx)
-	products, err := ctrl.productRepo.GetAllWithoutPagination(ctx)
+	products, err := ctrl.Service.GetAllWithoutPagination(ctx)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Lỗi khi lấy toàn bộ dữ liệu sản phẩm"})
 		return
