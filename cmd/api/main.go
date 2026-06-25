@@ -53,6 +53,8 @@ func main() {
 	{
 		publicAPI.GET("/categories", categoryController.GetAllCategories)
 
+		publiCAPI.GET("/products/all", productController.GetAllProductsNoPagination)
+
 		publicAPI.GET("/products", productController.GetAllProducts)
 		publicAPI.GET("/products/flash-sale", productController.GetFlashSaleProducts)
 		publicAPI.GET("/products/:id", productController.GetProduct)

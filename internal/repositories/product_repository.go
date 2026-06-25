@@ -262,3 +262,28 @@ func (r *ProductRepository) DeleteCategoryByName(ctx context.Context, categoryNa
 	_, err := r.CategoryCollection.DeleteOne(ctx, bson.M{"name": categoryName})
 	return err
 }
+
+// Lấy toàn bộ sản phẩm không phân trang
+func (r *ProductRepository) GetAllWithoutPagination(ctx context.Context) ([]*models.Product, error) {
+	// Khởi tạo mảng rỗng để tránh trả về null
+	products := make([]*models.Product, 0)
+
+	// Có thể chỉ lấy sản phẩm active, hoặc bỏ qua filter để lấy hết
+	filter := bson.M{"status": "active"}
+
+	cursor, err := r.Collection.Find(ctx, filter)
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	for cursor.Next(ctx) {
+		var product models.Product
+		if err := cursor.Decode(&product); err != nil {
+			return nil, err
+		}
+		products = append(products, &product)
+	}
+
+	return products, nil
+}
