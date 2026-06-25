@@ -6,7 +6,9 @@ import (
 	"path/filepath"
 	"product-service/internal/models"
 	"product-service/internal/services"
+	"product-service/internal/repositories"
 	"time"
+	"context"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
@@ -14,6 +16,7 @@ import (
 
 type ProductController struct {
 	Service *services.ProductService
+	productRepo *repositories.ProductRepository
 }
 
 func NewProductController(service *services.ProductService) *ProductController {
@@ -234,18 +237,19 @@ func (c *ProductController) BulkUpdateStock(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, gin.H{"message": "Cập nhật giỏ hàng thành công"})
 }
 
-func (h *ProductController) GetAllProductsNoPagination(c *gin.Context) {
+func (ctrl *ProductController) GetAllProductsNoPagination(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	// Gọi xuống hàm mới viết ở Repository
-	products, err := h.Repo.GetAllWithoutPagination(ctx)
+	// 2. CHÚ Ý TẠI ĐÂY: Thay chữ "Repo" thành tên chuẩn của bạn.
+	// Ví dụ: ctrl.productRepo.GetAllWithoutPagination(ctx)
+	// Hoặc: ctrl.ProductService.GetAllWithoutPagination(ctx)
+	products, err := ctrl.productRepo.GetAllWithoutPagination(ctx)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Lỗi khi lấy toàn bộ dữ liệu sản phẩm"})
 		return
 	}
 
-	// Trả về luôn mảng data và tổng số lượng
 	c.JSON(http.StatusOK, gin.H{
 		"data":  products,
 		"total": len(products),
