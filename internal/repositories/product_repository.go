@@ -48,52 +48,52 @@ func (r *ProductRepository) FindByID(ctx context.Context, id string) (*models.Pr
 }
 
 func (r *ProductRepository) FindAll(ctx context.Context, limit int64, skip int64, search string, category string, minPrice float64, maxPrice float64) ([]*models.Product, error) {
-	var products []*models.Product
+    // Sửa 1: Khởi tạo mảng sẵn để trả về "[]" thay vì "null" nếu không có sản phẩm
+    products := make([]*models.Product, 0)
 
-	// 1. Khởi tạo bộ lọc cơ bản (chỉ lấy sản phẩm đang ACTIVE)
-	filter := bson.M{"status": "ACTIVE"}
+    filter := bson.M{"status": "active"}
 
-	// 2. Lọc theo tên (Tìm kiếm gần đúng Regex, chữ "i" là không phân biệt hoa thường)
-	if search != "" {
-		filter["name"] = bson.M{"$regex": primitive.Regex{Pattern: search, Options: "i"}}
-	}
+    // 2. Lọc theo tên (Tìm kiếm gần đúng Regex, chữ "i" là không phân biệt hoa thường)
+    if search != "" {
+        filter["name"] = bson.M{"$regex": primitive.Regex{Pattern: search, Options: "i"}}
+    }
 
-	// 3. Lọc theo danh mục
-	if category != "" {
-		filter["category_id"] = category
-	}
+    // 3. Lọc theo danh mục
+    if category != "" {
+        filter["category_id"] = category
+    }
 
-	// 4. Lọc theo khoảng giá
-	if minPrice > 0 || maxPrice > 0 {
-		priceFilter := bson.M{}
-		if minPrice > 0 {
-			priceFilter["$gte"] = minPrice // $gte: Lớn hơn hoặc bằng
-		}
-		if maxPrice > 0 {
-			priceFilter["$lte"] = maxPrice // $lte: Nhỏ hơn hoặc bằng
-		}
-		filter["price"] = priceFilter
-	}
+    // 4. Lọc theo khoảng giá
+    if minPrice > 0 || maxPrice > 0 {
+        priceFilter := bson.M{}
+        if minPrice > 0 {
+            priceFilter["$gte"] = minPrice // $gte: Lớn hơn hoặc bằng
+        }
+        if maxPrice > 0 {
+            priceFilter["$lte"] = maxPrice // $lte: Nhỏ hơn hoặc bằng
+        }
+        filter["price"] = priceFilter
+    }
 
-	findOptions := options.Find()
-	findOptions.SetLimit(limit)
-	findOptions.SetSkip(skip)
+    findOptions := options.Find()
+    findOptions.SetLimit(limit)
+    findOptions.SetSkip(skip)
 
-	cursor, err := r.Collection.Find(ctx, filter, findOptions)
-	if err != nil {
-		return nil, err
-	}
-	defer cursor.Close(ctx)
+    cursor, err := r.Collection.Find(ctx, filter, findOptions)
+    if err != nil {
+        return nil, err
+    }
+    defer cursor.Close(ctx)
 
-	for cursor.Next(ctx) {
-		var product models.Product
-		if err := cursor.Decode(&product); err != nil {
-			return nil, err
-		}
-		products = append(products, &product)
-	}
+    for cursor.Next(ctx) {
+        var product models.Product
+        if err := cursor.Decode(&product); err != nil {
+            return nil, err
+        }
+        products = append(products, &product)
+    }
 
-	return products, nil
+    return products, nil
 }
 
 func (r *ProductRepository) Update(ctx context.Context, id string, updateData *models.Product) error {
@@ -130,7 +130,7 @@ func (r *ProductRepository) FindFlashSales(ctx context.Context, limit int64) ([]
 	filter := bson.M{
 		"discount_percent": bson.M{"$gt": 0},
 		"sale_end_date":    bson.M{"$gt": now},
-		"status":           "ACTIVE",
+		"status":           "active",
 	}
 
 	// 2. Tùy chọn truy vấn: Ưu tiên xếp sản phẩm giảm giá sâu lên đầu
