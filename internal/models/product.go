@@ -21,6 +21,7 @@ type Product struct {
 	SaleEndDate     *time.Time             `bson:"sale_end_date,omitempty" json:"sale_end_date"`     // Dùng con trỏ để cho phép null
 
 	CategoryID  string                 `bson:"category_id" json:"category_id" binding:"required"`
+	CategorySlug string				   `bson:"category_slug" json:"category_slug"`
 	VendorID    string                 `bson:"vendor_id" json:"vendor_id"`
 	Brand       string                 `bson:"brand" json:"brand"`
 	Images      []string               `bson:"images" json:"images"`

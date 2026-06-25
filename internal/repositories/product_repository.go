@@ -58,10 +58,16 @@ func (r *ProductRepository) FindAll(ctx context.Context, limit int64, skip int64
         filter["name"] = bson.M{"$regex": primitive.Regex{Pattern: search, Options: "i"}}
     }
 
-    // 3. Lọc theo danh mục
-    if category != "" {
-        filter["category_id"] = category
-    }
+    // 3. Lọc theo danh mục (Hỗ trợ cả ID loằng ngoằng và chữ "smartphones")
+	if category != "" {
+		if primitive.IsValidObjectID(category) {
+			// Nếu Frontend truyền ID -> Lọc theo cột category_id
+			filter["category_id"] = category
+		} else {
+			// Nếu Frontend truyền chữ -> Lọc theo cột category_slug
+			filter["category_slug"] = category
+		}
+	}
 
     // 4. Lọc theo khoảng giá
     if minPrice > 0 || maxPrice > 0 {
